@@ -19,19 +19,16 @@ jobs:
 
       - name: Create perfect Android structure
         run: |
-          # Создаем чистые папки для сборки приложения
           mkdir -p final_project/app/src/main/assets
           mkdir -p final_project/app/src/main/java
           mkdir -p final_project/app/src/main/res
           
-          # Копируем ваш index.html в нужное место
           find user_project -name "index.html" -exec cp {} final_project/app/src/main/assets/index.html \;
           
-          # Копируем исходный код java и ресурсы res из вашего архива
-          find user_project -path "*/src/main/java/*" -type f -exec cp --parents {} final_project/app/src/main/java/ \; 2>/dev/null || true
-          find user_project -path "*/src/main/res/*" -type f -exec cp --parents {} final_project/app/src/main/res/ \; 2>/dev/null || true
+          # Копируем файлы вашего приложения, если они есть
+          cp -r user_project/app/src/main/java/* final_project/app/src/main/java/ 2>/dev/null || true
+          cp -r user_project/app/src/main/res/* final_project/app/src/main/res/ 2>/dev/null || true
           
-          # Генерируем чистые и правильные файлы настроек для Gradle 8
           cd final_project
           
           cat << 'EOF' > settings.gradle
@@ -73,14 +70,9 @@ jobs:
       - name: Build APK with Gradle
         run: |
           cd final_project
-          # Генерируем локальный файл запуска сборщика
           gradle wrapper --gradle-version 8.1.1
           chmod +x ./gradlew
-          
-          # Запускаем финальную компиляцию приложения
           ./gradlew assembleDebug
-          
-          # Сохраняем готовый файл для скачивания
           mkdir -p ../output_apk
           cp app/build/outputs/apk/debug/*.apk ../output_apk/app-debug.apk
 
