@@ -17,20 +17,18 @@ jobs:
       - name: Extract user archive
         run: unzip MyHTMLApp_APK_Project.zip -d user_project
 
-      - name: Create perfect Android structure
+      - name: Create Isolated Android Project
         run: |
-          mkdir -p final_project/app/src/main/assets
-          mkdir -p final_project/app/src/main/java
-          mkdir -p final_project/app/src/main/res
+          # Создаем изолированную структуру проекта
+          mkdir -p isolated_app/app/src/main/assets
+          mkdir -p isolated_app/app/src/main/res/values
           
-          find user_project -name "index.html" -exec cp {} final_project/app/src/main/assets/index.html \;
+          # Копируем ТОЛЬКО ваш файл игры index.html
+          find user_project -name "index.html" -exec cp {} isolated_app/app/src/main/assets/index.html \;
           
-          # Копируем файлы вашего приложения, если они есть
-          cp -r user_project/app/src/main/java/* final_project/app/src/main/java/ 2>/dev/null || true
-          cp -r user_project/app/src/main/res/* final_project/app/src/main/res/ 2>/dev/null || true
+          cd isolated_app
           
-          cd final_project
-          
+          # Создаем чистые файлы настроек под современные стандарты Gradle 8
           cat << 'EOF' > settings.gradle
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
@@ -50,14 +48,16 @@ jobs:
                   applicationId 'com.myvrgame.cube'
                   minSdk 26
                   targetSdk 33
+                  versionCode 1
+                  versionName "1.0"
               }
           }
           EOF
 
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://android.com">
-              <application android:label="PicoCube" android:hasCode="true" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
-                  <activity android:name="com.myapp.html.MainActivity" android:exported="true">
+              <application android:label="PicoCube" android:hasCode="false" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  <activity android:name="android.app.Activity" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
@@ -67,12 +67,17 @@ jobs:
           </manifest>
           EOF
 
-      - name: Build APK with Gradle
+      - name: Build APK with Diagnostic Mode
         run: |
-          cd final_project
+          cd isolated_app
+          # Генерируем локальный инструмент сборки
           gradle wrapper --gradle-version 8.1.1
           chmod +x ./gradlew
-          ./gradlew assembleDebug
+          
+          # Запускаем сборку с выводом точной ошибки в случае сбоя (--stacktrace --info)
+          ./gradlew assembleDebug --stacktrace --info || { echo "=== DIAGNOSTIC REPORT ==="; ./gradlew app:dependencies; exit 1; }
+          
+          # Выносим готовый файл наружу
           mkdir -p ../output_apk
           cp app/build/outputs/apk/debug/*.apk ../output_apk/app-debug.apk
 
