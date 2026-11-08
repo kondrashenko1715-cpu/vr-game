@@ -19,12 +19,23 @@ jobs:
 
       - name: Build APK with Gradle
         run: |
-          cd project_files
+          # Ищем, в какую именно подпапку распаковался проект
+          GRADLEW_PATH=$(find project_files -name gradlew)
+          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+          
+          echo "Проект найден в папке: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          
+          # Даем права на запуск и собираем APK
           chmod +x gradlew
           ./gradlew assembleDebug
+          
+          # Копируем готовый APK в надежное место для выгрузки
+          mkdir -p ../../output_apk
+          cp app/build/outputs/apk/debug/*.apk ../../output_apk/app-debug.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: vr-game-apk
-          path: project_files/app/build/outputs/apk/debug/app-debug.apk
+          path: output_apk/app-debug.apk
