@@ -8,11 +8,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ДОБАВЛЕНО: Полное затирание кэша и удаление всех старых временных папок на сервере перед стартом
+      - name: Clear cache and old files
+        run: |
+          echo "Очищаем кэш сервера..."
+          rm -rf final_app isolated_app final_project gradle_project web_files build_dir output_apk
+          git clean -fdx || true
+
       - name: Extract user archive
         run: |
           unzip MyHTMLApp_APK_Project.zip -d web_files
           mkdir -p final_app/assets
           find web_files -name "index.html" -exec cp {} final_app/assets/index.html \;
+          
+          # Копируем чистый манифест с главной страницы GitHub в папку сборки
+          cp AndroidManifest.xml final_app/AndroidManifest.xml
 
       - name: Build APK via Native Android Tools
         run: |
@@ -25,10 +35,6 @@ jobs:
           echo "Используем платформу: $ANDROID_JAR"
           
           cd final_app
-          
-          # Записываем весь манифест в одну строчку, чтобы исключить любые ошибки чтения символов
-          echo '<manifest xmlns:android="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0"><uses-permission android:name="android.permission.INTERNET" /><application android:label="PicoCube" android:hasCode="false" android:theme="@android:style/Theme.NoTitleBar.Fullscreen"><activity android:name="android.app.Activity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity></application></manifest>' > AndroidManifest.xml
-
           $AAPT2_PATH link --manifest AndroidManifest.xml -I $ANDROID_JAR -A assets -o ../output_apk/app-debug.apk --java ../build_dir
 
       - name: Upload APK artifact
