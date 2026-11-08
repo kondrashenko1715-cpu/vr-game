@@ -17,24 +17,21 @@ jobs:
       - name: Unzip project
         run: unzip MyHTMLApp_APK_Project.zip -d project_files
 
-      - name: Build APK with Gradle
+      - name: Сборка APK с помощью Gradle
         run: |
-          # Ищем, в какую именно подпапку распаковался проект
-          GRADLEW_PATH=$(find project_files -name gradlew)
-          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+          cd project_files
           
-          echo "Проект найден в папке: $PROJECT_DIR"
-          cd "$PROJECT_DIR"
+          # Проверяем, есть ли gradlew в корне, если нет - даем ему права напрямую
+          chmod +x ./gradlew
           
-          # Даем права на запуск и собираем APK
-          chmod +x gradlew
+          # Запускаем сборку
           ./gradlew assembleDebug
           
-          # Копируем готовый APK в надежное место для выгрузки
-          mkdir -p ../../output_apk
-          cp app/build/outputs/apk/debug/*.apk ../../output_apk/app-debug.apk
+          # Создаем папку для выгрузки и копируем APK
+          mkdir -p ../output_apk
+          cp app/build/outputs/apk/debug/*.apk ../output_apk/app-debug.apk
 
-      - name: Upload APK
+      - name: Загрузить APK
         uses: actions/upload-artifact@v4
         with:
           name: vr-game-apk
