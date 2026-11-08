@@ -1,4 +1,4 @@
-name: Build VR APK Without Gradle
+name: Build VR APK Free Version
 on: [push, workflow_dispatch]
 
 jobs:
@@ -8,64 +8,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Extract user archive
-        run: unzip MyHTMLApp_APK_Project.zip -d web_files
-
-      - name: Install Google Bubblewrap
-        run: npm install -g @bubblewrap/cli
-
-      - name: Auto Accept Google Licenses Systemly
         run: |
-          mkdir -p ${ANDROID_HOME}/licenses
-          echo -e "244d2d9e8dbc56f047e6863d613bc793828a74bc\n5c50c75a9f6285136d319b448d67252277d4c244\nc33c2e51ccc596ed5e7f8f1de05d4d292e8a202d" > ${ANDROID_HOME}/licenses/android-sdk-license
-          echo -e "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" > ${ANDROID_HOME}/licenses/android-sdk-preview-license
-          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          unzip MyHTMLApp_APK_Project.zip -d web_files
+          mkdir -p final_web
+          find web_files -name "index.html" -exec cp {} final_web/index.html \;
 
-      - name: Initialize WebAPK Project
-        run: |
-          mkdir -p apk_project
-          find web_files -name "index.html" -exec cp {} apk_project/index.html \;
-          cd apk_project
-          
-          cat << 'EOF' > manifest.json
-          {
-            "name": "Pico4 Cube Game",
-            "short_name": "PicoCube",
-            "start_url": "./index.html",
-            "display": "standalone",
-            "orientation": "landscape",
-            "background_color": "#111111",
-            "theme_color": "#FF9500",
-            "icons": [
-              {
-                "src": "https://aframe.io",
-                "sizes": "128x128",
-                "type": "image/png"
-              }
-            ]
-          }
-          EOF
-
-      - name: Build Final APK
-        run: |
-          cd apk_project
-          export BUBBLEWRAP_JDK_PATH=${JAVA_HOME}
-          export BUBBLEWRAP_ANDROID_SDK_PATH=${ANDROID_HOME}
-          
-          # ИСПРАВЛЕНО: Добавлен флаг --yes, чтобы робот сам нажимал "Да" на вопросы про JDK
-          bubblewrap init --manifest=manifest.json --meta-check=false --yes
-          bubblewrap build --skipSigning=true --yes
-          
-          mkdir -p ../output_apk
-          cp *.apk ../output_apk/app-release-unsigned.apk
+      - name: Convert HTML to APK
+        uses: Hrishikesh-Pathak/Html-To-Apk@v2.0.0
+        with:
+          html-folder-path: './final_web'
+          app-name: 'PicoCube'
+          package-name: 'com.myvrgame.cube'
+          output-apk-path: './output_apk/app-debug.apk'
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: vr-game-apk
-          path: output_apk/app-release-unsigned.apk
+          path: output_apk/app-debug.apk
