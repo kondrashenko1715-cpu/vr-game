@@ -11,16 +11,31 @@ jobs:
       - name: Extract user archive
         run: |
           unzip MyHTMLApp_APK_Project.zip -d web_files
-          mkdir -p final_web
-          find web_files -name "index.html" -exec cp {} final_web/index.html \;
+          mkdir -p final_app/assets
+          find web_files -name "index.html" -exec cp {} final_app/assets/index.html \;
 
-      - name: Convert HTML to APK via Docker
+      - name: Build APK via Native Android Tools
         run: |
-          mkdir -p output_apk
-          # Используем официальный и всегда доступный Docker-сборщик веб-приложений
-          docker run --rm -v ${{ github.workspace }}/final_web:/app/www -v ${{ github.workspace }}/output_apk:/app/output corporateld/cordova-build-android
-          # На всякий случай проверяем и переименовываем файл для выгрузки
-          mv output_apk/*.apk output_apk/app-debug.apk || true
+          mkdir -p build_dir output_apk
+          cd final_app
+          
+          # 1. Создаем минимальный AndroidManifest без Java-кода (чистый Web-просмотрщик)
+          cat << 'EOF' > AndroidManifest.xml
+          <manifest xmlns:android="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application android:label="PicoCube" android:hasCode="false" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  <activity android:name="android.app.Activity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # 2. Упаковываем ресурсы встроенным инструментом aapt2 из Android SDK
+          ${ANDROID_HOME}/build-tools/33.0.0/aapt2 link --manifest AndroidManifest.xml -I ${ANDROID_HOME}/platforms/android-33/android.jar -A assets -o ../output_apk/app-debug.apk --java ../build_dir
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
