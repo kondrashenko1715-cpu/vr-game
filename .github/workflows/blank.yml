@@ -21,7 +21,8 @@ jobs:
         run: |
           mkdir -p gradle_project/app/src/main/assets
           cd gradle_project
-          gradle init --type basic --dsl groovy
+          # ИСПРАВЛЕНО: добавлена опция --overwrite, чтобы обойти ошибку блокировки файлов
+          gradle init --type basic --dsl groovy --overwrite
           find ../user_project -name "index.html" -exec cp {} app/src/main/assets/index.html \;
           echo "plugins { id 'com.android.application' version '8.1.0' }" > build.gradle
           echo "plugins { id 'com.android.application' version '8.1.0' }" > app/build.gradle
