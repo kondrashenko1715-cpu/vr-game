@@ -20,8 +20,8 @@ jobs:
       - name: Convert HTML to APK via Simple Compiler
         run: |
           mkdir -p output_apk
-          # Используем готовый и легкий Docker-паковщик веб-страниц
-          docker run --rm -v ${{ github.workspace }}/final_web:/src -v ${{ github.workspace }}/output_apk: /dist ghcr.io/tech-engine/html-to-apk:latest
+          # ИСПРАВЛЕНО: Убран лишний пробел в путях контейнера перед /dist
+          docker run --rm -v ${{ github.workspace }}/final_web:/src -v ${{ github.workspace }}/output_apk:/dist ghcr.io/tech-engine/html-to-apk:latest
           # Проверяем и переименовываем готовый файл для выгрузки
           mv output_apk/*.apk output_apk/app-debug.apk || true
 
