@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Pico 4 VR: Руки и Кубик</title>
+    <!-- Подключаем 3D движок для шлема -->
+    <script src="https://aframe.io"></script>
+    <!-- Подключаем физику, чтобы объекты имели вес и объем -->
+    <script src="https://jsdelivr.net"></script>
+    <!-- Подключаем компонент для захвата объектов боковой кнопкой Grip -->
+    <script src="https://unpkg.com"></script>
+  </head>
+  <body>
+    <!-- Создаем 3D-пространство без гравитации, чтобы куб не падал -->
+    <a-scene physics="gravity: 0">
+      
+      <!-- Темное стильное пространство вокруг -->
+      <a-sky color="#1a1a1a"></a-sky>
+      <a-grid color="#333"></a-grid>
+
+      <!-- Тот самый ОРАНЖЕВЫЙ КУБИК -->
+      <!-- grabbable означает, что его можно взять рукой по кнопке Grip -->
+      <a-box id="cube" position="0 1.2 -0.6" width="0.3" height="0.3" depth="0.3" color="#FF9500" 
+             hoverable grabbable stretchable draggable dynamic-body>
+      </a-box>
+
+      <!-- Ваши ВИРТУАЛЬНЫЕ РУКИ -->
+      <!-- Они автоматически привязываются к контроллерам Pico 4 и считывают нажатия кнопок -->
+      
+      
+
+    </a-scene>
+  </body>
+</html>
