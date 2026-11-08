@@ -1,4 +1,4 @@
-name: Build VR APK Safe Version
+name: Build VR APK Without Gradle
 on: [push, workflow_dispatch]
 
 jobs:
@@ -8,81 +8,60 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          node-size: '20'
 
       - name: Extract user archive
-        run: unzip MyHTMLApp_APK_Project.zip -d user_project
+        run: unzip MyHTMLApp_APK_Project.zip -d web_files
 
-      - name: Create Isolated Android Project
+      - name: Install Google Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Initialize WebAPK Project
         run: |
-          # Создаем изолированную структуру проекта
-          mkdir -p isolated_app/app/src/main/assets
-          mkdir -p isolated_app/app/src/main/res/values
+          # Создаем легкие настройки приложения без Android Studio и Gradle
+          mkdir -p apk_project
           
-          # Копируем ТОЛЬКО ваш файл игры index.html
-          find user_project -name "index.html" -exec cp {} isolated_app/app/src/main/assets/index.html \;
+          # Находим ваш файл игры и кладем его в корень веб-папки
+          find web_files -name "index.html" -exec cp {} apk_project/index.html \;
           
-          cd isolated_app
+          cd apk_project
           
-          # Создаем чистые файлы настроек под современные стандарты Gradle 8
-          cat << 'EOF' > settings.gradle
-          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
-          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
-          include ':app'
-          EOF
-
-          cat << 'EOF' > build.gradle
-          plugins { id 'com.android.application' version '8.1.0' apply false }
-          EOF
-
-          cat << 'EOF' > app/build.gradle
-          plugins { id 'com.android.application' }
-          android {
-              compileSdk 33
-              namespace 'com.myvrgame.cube'
-              defaultConfig {
-                  applicationId 'com.myvrgame.cube'
-                  minSdk 26
-                  targetSdk 33
-                  versionCode 1
-                  versionName "1.0"
+          # Генерируем специальный манифест, чтобы шлем Pico 4 видел сайт как игру
+          cat << 'EOF' > manifest.json
+          {
+            "name": "Pico4 Cube Game",
+            "short_name": "PicoCube",
+            "start_url": "./index.html",
+            "display": "standalone",
+            "orientation": "landscape",
+            "background_color": "#111111",
+            "theme_color": "#FF9500",
+            "icons": [
+              {
+                "src": "https://aframe.io",
+                "sizes": "128x128",
+                "type": "image/png"
               }
+            ]
           }
           EOF
 
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
-          <manifest xmlns:android="http://android.com">
-              <application android:label="PicoCube" android:hasCode="false" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
-                  <activity android:name="android.app.Activity" android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
-
-      - name: Build APK with Diagnostic Mode
+      - name: Build Final APK
         run: |
-          cd isolated_app
-          # Генерируем локальный инструмент сборки
-          gradle wrapper --gradle-version 8.1.1
-          chmod +x ./gradlew
+          cd apk_project
+          # Запускаем сборку легкого APK-пакета напрямую через инструменты Google
+          bubblewrap init --manifest=manifest.json --meta-check=false
+          bubblewrap build --skipSigning=true
           
-          # Запускаем сборку с выводом точной ошибки в случае сбоя (--stacktrace --info)
-          ./gradlew assembleDebug --stacktrace --info || { echo "=== DIAGNOSTIC REPORT ==="; ./gradlew app:dependencies; exit 1; }
-          
-          # Выносим готовый файл наружу
+          # Переносим готовый файл для выгрузки
           mkdir -p ../output_apk
-          cp app/build/outputs/apk/debug/*.apk ../output_apk/app-debug.apk
+          cp *.apk ../output_apk/app-release-unsigned.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: vr-game-apk
-          path: output_apk/app-debug.apk
+          path: output_apk/app-release-unsigned.apk
