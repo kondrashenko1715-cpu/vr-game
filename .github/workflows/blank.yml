@@ -1,4 +1,4 @@
-name: Build VR APK
+name: Build VR APK Safe Version
 on: [push, workflow_dispatch]
 
 jobs:
@@ -14,24 +14,30 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Unzip project
-        run: unzip MyHTMLApp_APK_Project.zip -d project_files
+      - name: Unzip project files
+        run: unzip MyHTMLApp_APK_Project.zip -d user_project
 
-      - name: Сборка APK с помощью Gradle
+      - name: Initialize Android template
         run: |
-          cd project_files
-          
-          # Проверяем, есть ли gradlew в корне, если нет - даем ему права напрямую
+          mkdir -p gradle_project/app/src/main/assets
+          cd gradle_project
+          gradle init --type basic --dsl groovy
+          find ../user_project -name "index.html" -exec cp {} app/src/main/assets/index.html \;
+          echo "plugins { id 'com.android.application' version '8.1.0' }" > build.gradle
+          echo "plugins { id 'com.android.application' version '8.1.0' }" > app/build.gradle
+          echo "android { compileSdk 33; defaultConfig { applicationId 'com.myvrgame.cube'; minSdk 26; targetSdk 33 } }" >> app/build.gradle
+          echo "include ':app'" > settings.gradle
+
+      - name: Build APK with Gradle
+        run: |
+          cd gradle_project
+          gradle wrapper
           chmod +x ./gradlew
-          
-          # Запускаем сборку
           ./gradlew assembleDebug
-          
-          # Создаем папку для выгрузки и копируем APK
           mkdir -p ../output_apk
           cp app/build/outputs/apk/debug/*.apk ../output_apk/app-debug.apk
 
-      - name: Загрузить APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: vr-game-apk
