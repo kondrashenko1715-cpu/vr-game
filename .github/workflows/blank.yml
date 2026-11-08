@@ -26,18 +26,8 @@ jobs:
           
           cd final_app
           
-          # Записываем правильный манифест построчно, чтобы GitHub точно применил все имена
-          echo '<manifest xmlns:android="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0">' > AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.INTERNET" />' >> AndroidManifest.xml
-          echo '    <application android:label="PicoCube" android:hasCode="false" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">' >> AndroidManifest.xml
-          echo '        <activity android:name="android.app.Activity" android:exported="true">' >> AndroidManifest.xml
-          echo '            <intent-filter>' >> AndroidManifest.xml
-          echo '                <action android:name="android.intent.action.MAIN" />' >> AndroidManifest.xml
-          echo '                <category android:name="android.intent.category.LAUNCHER" />' >> AndroidManifest.xml
-          echo '            </intent-filter>' >> AndroidManifest.xml
-          echo '        </activity>' >> AndroidManifest.xml
-          echo '    </application>' >> AndroidManifest.xml
-          echo '</manifest>' >> AndroidManifest.xml
+          # Записываем весь манифест в одну строчку, чтобы исключить любые ошибки чтения символов
+          echo '<manifest xmlns:android="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0"><uses-permission android:name="android.permission.INTERNET" /><application android:label="PicoCube" android:hasCode="false" android:theme="@android:style/Theme.NoTitleBar.Fullscreen"><activity android:name="android.app.Activity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity></application></manifest>' > AndroidManifest.xml
 
           $AAPT2_PATH link --manifest AndroidManifest.xml -I $ANDROID_JAR -A assets -o ../output_apk/app-debug.apk --java ../build_dir
 
