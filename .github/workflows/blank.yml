@@ -20,17 +20,8 @@ jobs:
           mkdir -p final_app/assets
           find web_files -name "index.html" -exec cp {} final_app/assets/index.html \;
           
-          # Записываем чистый манифест БЕЗ копирования внешних файлов, чтобы избежать ошибки No such file
-          echo '<manifest xmlns:android="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0">' > final_app/AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.INTERNET" />' >> final_app/AndroidManifest.xml
-          echo '    <application android:label="PicoCube" android:hasCode="false" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">' >> final_app/AndroidManifest.xml
-          echo '        <activity android:name="android.app.Activity" android:exported="true">' >> final_app/AndroidManifest.xml
-          echo '            <intent-filter>' >> final_app/AndroidManifest.xml
-          echo '                <action android:name="android.intent.action.MAIN" />' >> final_app/AndroidManifest.xml
-          echo '                <category android:name="android.intent.category.LAUNCHER" />' >> final_app/AndroidManifest.xml
-          echo '            </intent-filter>' >> final_app/AndroidManifest.xml
-          echo '        </activity>' >> final_app/application>' >> final_app/AndroidManifest.xml
-          echo '</manifest>' >> final_app/AndroidManifest.xml
+          # ИСПРАВЛЕНО: Чистая, аккуратная запись манифеста в одну строчку без синтаксических ошибок
+          echo '<manifest xmlns:android="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0"><uses-permission android:name="android.permission.INTERNET" /><application android:label="PicoCube" android:hasCode="false" android:theme="@android:style/Theme.NoTitleBar.Fullscreen"><activity android:name="android.app.Activity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity></application></manifest>' > final_app/AndroidManifest.xml
 
       - name: Build APK via Native Android Tools
         run: |
