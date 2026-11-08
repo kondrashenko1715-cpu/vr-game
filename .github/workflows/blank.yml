@@ -21,13 +21,20 @@ jobs:
         run: |
           mkdir -p gradle_project/app/src/main/assets
           cd gradle_project
-          # ИСПРАВЛЕНО: добавлена опция --overwrite, чтобы обойти ошибку блокировки файлов
           gradle init --type basic --dsl groovy --overwrite
           find ../user_project -name "index.html" -exec cp {} app/src/main/assets/index.html \;
-          echo "plugins { id 'com.android.application' version '8.1.0' }" > build.gradle
-          echo "plugins { id 'com.android.application' version '8.1.0' }" > app/build.gradle
+          
+          # Создаем настройки проекта с указанием репозиториев Google для плагинов
+          echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
+          echo "include ':app'" >> settings.gradle
+          
+          # Создаем корневой файл build.gradle
+          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.1.0' } }" > build.gradle
+          echo "allprojects { repositories { google(); mavenCentral() } }" >> build.gradle
+          
+          # Создаем build.gradle для самого приложения
+          echo "plugins { id 'com.android.application' }" > app/build.gradle
           echo "android { compileSdk 33; defaultConfig { applicationId 'com.myvrgame.cube'; minSdk 26; targetSdk 33 } }" >> app/build.gradle
-          echo "include ':app'" > settings.gradle
 
       - name: Build APK with Gradle
         run: |
