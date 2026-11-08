@@ -14,34 +14,73 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Unzip project files
+      - name: Extract user archive
         run: unzip MyHTMLApp_APK_Project.zip -d user_project
 
-      - name: Initialize Android template
+      - name: Create perfect Android structure
         run: |
-          mkdir -p gradle_project/app/src/main/assets
-          cd gradle_project
-          gradle init --type basic --dsl groovy --overwrite
-          find ../user_project -name "index.html" -exec cp {} app/src/main/assets/index.html \;
+          # Создаем чистые папки для сборки приложения
+          mkdir -p final_project/app/src/main/assets
+          mkdir -p final_project/app/src/main/java
+          mkdir -p final_project/app/src/main/res
           
-          # Настраиваем репозитории для плагинов и зависимостей по новым правилам Gradle 8
-          echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-          echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
-          echo "include ':app'" >> settings.gradle
+          # Копируем ваш index.html в нужное место
+          find user_project -name "index.html" -exec cp {} final_project/app/src/main/assets/index.html \;
           
-          # Очищаем корневой build.gradle для совместимости с Gradle 8
-          echo "plugins { id 'com.android.application' version '8.1.0' apply false }" > build.gradle
+          # Копируем исходный код java и ресурсы res из вашего архива
+          find user_project -path "*/src/main/java/*" -type f -exec cp --parents {} final_project/app/src/main/java/ \; 2>/dev/null || true
+          find user_project -path "*/src/main/res/*" -type f -exec cp --parents {} final_project/app/src/main/res/ \; 2>/dev/null || true
           
-          # Создаем build.gradle для самого приложения
-          echo "plugins { id 'com.android.application' }" > app/build.gradle
-          echo "android { compileSdk 33; namespace 'com.myvrgame.cube'; defaultConfig { applicationId 'com.myvrgame.cube'; minSdk 26; targetSdk 33 } }" >> app/build.gradle
+          # Генерируем чистые и правильные файлы настроек для Gradle 8
+          cd final_project
+          
+          cat << 'EOF' > settings.gradle
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+          include ':app'
+          EOF
+
+          cat << 'EOF' > build.gradle
+          plugins { id 'com.android.application' version '8.1.0' apply false }
+          EOF
+
+          cat << 'EOF' > app/build.gradle
+          plugins { id 'com.android.application' }
+          android {
+              compileSdk 33
+              namespace 'com.myvrgame.cube'
+              defaultConfig {
+                  applicationId 'com.myvrgame.cube'
+                  minSdk 26
+                  targetSdk 33
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://android.com">
+              <application android:label="PicoCube" android:hasCode="true" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  <activity android:name="com.myapp.html.MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
 
       - name: Build APK with Gradle
         run: |
-          cd gradle_project
-          gradle wrapper
+          cd final_project
+          # Генерируем локальный файл запуска сборщика
+          gradle wrapper --gradle-version 8.1.1
           chmod +x ./gradlew
+          
+          # Запускаем финальную компиляцию приложения
           ./gradlew assembleDebug
+          
+          # Сохраняем готовый файл для скачивания
           mkdir -p ../output_apk
           cp app/build/outputs/apk/debug/*.apk ../output_apk/app-debug.apk
 
