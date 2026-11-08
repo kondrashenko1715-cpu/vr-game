@@ -17,9 +17,17 @@ jobs:
       - name: Build APK via Native Android Tools
         run: |
           mkdir -p build_dir output_apk
+          
+          # Автоматически находим пути к актуальным инструментам aapt2 и android.jar на сервере
+          AAPT2_PATH=$(find ${ANDROID_HOME}/build-tools -name aapt2 | sort -V | tail -n 1)
+          ANDROID_JAR=$(find ${ANDROID_HOME}/platforms -name android.jar | sort -V | tail -n 1)
+          
+          echo "Используем aapt2 по пути: $AAPT2_PATH"
+          echo "Используем платформу: $ANDROID_JAR"
+          
           cd final_app
           
-          # 1. Создаем минимальный AndroidManifest без Java-кода (чистый Web-просмотрщик)
+          # Создаем чистый AndroidManifest
           cat << 'EOF' > AndroidManifest.xml
           <manifest xmlns:android="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0">
               <uses-permission android:name="android.permission.INTERNET" />
@@ -34,8 +42,8 @@ jobs:
           </manifest>
           EOF
 
-          # 2. Упаковываем ресурсы встроенным инструментом aapt2 из Android SDK
-          ${ANDROID_HOME}/build-tools/33.0.0/aapt2 link --manifest AndroidManifest.xml -I ${ANDROID_HOME}/platforms/android-33/android.jar -A assets -o ../output_apk/app-debug.apk --java ../build_dir
+          # Упаковываем ресурсы с использованием автоматически найденных путей
+          $AAPT2_PATH link --manifest AndroidManifest.xml -I $ANDROID_JAR -A assets -o ../output_apk/app-debug.apk --java ../build_dir
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
