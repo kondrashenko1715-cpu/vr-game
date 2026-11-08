@@ -11,7 +11,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-size: '20'
+          node-version: '20'
 
       - name: Extract user archive
         run: unzip MyHTMLApp_APK_Project.zip -d web_files
@@ -21,15 +21,10 @@ jobs:
 
       - name: Initialize WebAPK Project
         run: |
-          # Создаем легкие настройки приложения без Android Studio и Gradle
           mkdir -p apk_project
-          
-          # Находим ваш файл игры и кладем его в корень веб-папки
           find web_files -name "index.html" -exec cp {} apk_project/index.html \;
-          
           cd apk_project
           
-          # Генерируем специальный манифест, чтобы шлем Pico 4 видел сайт как игру
           cat << 'EOF' > manifest.json
           {
             "name": "Pico4 Cube Game",
@@ -52,11 +47,10 @@ jobs:
       - name: Build Final APK
         run: |
           cd apk_project
-          # Запускаем сборку легкого APK-пакета напрямую через инструменты Google
-          bubblewrap init --manifest=manifest.json --meta-check=false
-          bubblewrap build --skipSigning=true
+          # ИСПРАВЛЕНО: добавлена команда yes | чтобы автоматически отвечать на все вопросы робота
+          yes "" | bubblewrap init --manifest=manifest.json --meta-check=false
+          yes "" | bubblewrap build --skipSigning=true
           
-          # Переносим готовый файл для выгрузки
           mkdir -p ../output_apk
           cp *.apk ../output_apk/app-release-unsigned.apk
 
