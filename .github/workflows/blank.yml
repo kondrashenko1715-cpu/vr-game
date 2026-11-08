@@ -9,21 +9,39 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Clean server space
-        run: rm -rf final_web output_apk web_files
+        run: rm -rf final_web output_apk web_files final_app
 
       - name: Extract user archive
         run: |
           unzip MyHTMLApp_APK_Project.zip -d web_files
-          mkdir -p final_web
-          find web_files -name "index.html" -exec cp {} final_web/index.html \;
+          mkdir -p final_app/assets
+          find web_files -name "index.html" -exec cp {} final_app/assets/index.html \;
 
-      - name: Convert HTML to APK via Simple Compiler
+      - name: Build APK via Java Ant Tools
         run: |
           mkdir -p output_apk
-          # ИСПРАВЛЕНО: Убран лишний пробел в путях контейнера перед /dist
-          docker run --rm -v ${{ github.workspace }}/final_web:/src -v ${{ github.workspace }}/output_apk:/dist ghcr.io/tech-engine/html-to-apk:latest
-          # Проверяем и переименовываем готовый файл для выгрузки
-          mv output_apk/*.apk output_apk/app-debug.apk || true
+          cd final_app
+          
+          # Автоматически генерируем чистую Android-оболочку без тяжелых библиотек
+          cat << 'EOF' > AndroidManifest.xml
+          <manifest xmlns:android="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0">
+              <application android:label="PicoCube" android:hasCode="false">
+                  <activity android:name="android.app.Activity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # Находим системные инструменты Android, которые уже вшиты в сервер GitHub
+          AAPT_PATH=$(find ${ANDROID_HOME}/build-tools -name aapt | sort -V | tail -n 1)
+          ANDROID_JAR=$(find ${ANDROID_HOME}/platforms -name android.jar | sort -V | tail -n 1)
+          
+          # Молниеносно собираем легкий APK файл напрямую одной командой
+          $AAPT_PATH package -f -M AndroidManifest.xml -I $ANDROID_JAR -A assets -F ../output_apk/app-debug.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
