@@ -24,17 +24,17 @@ jobs:
           gradle init --type basic --dsl groovy --overwrite
           find ../user_project -name "index.html" -exec cp {} app/src/main/assets/index.html \;
           
-          # Создаем настройки проекта с указанием репозиториев Google для плагинов
+          # Настраиваем репозитории для плагинов и зависимостей по новым правилам Gradle 8
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
+          echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
           echo "include ':app'" >> settings.gradle
           
-          # Создаем корневой файл build.gradle
-          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.1.0' } }" > build.gradle
-          echo "allprojects { repositories { google(); mavenCentral() } }" >> build.gradle
+          # Очищаем корневой build.gradle для совместимости с Gradle 8
+          echo "plugins { id 'com.android.application' version '8.1.0' apply false }" > build.gradle
           
           # Создаем build.gradle для самого приложения
           echo "plugins { id 'com.android.application' }" > app/build.gradle
-          echo "android { compileSdk 33; defaultConfig { applicationId 'com.myvrgame.cube'; minSdk 26; targetSdk 33 } }" >> app/build.gradle
+          echo "android { compileSdk 33; namespace 'com.myvrgame.cube'; defaultConfig { applicationId 'com.myvrgame.cube'; minSdk 26; targetSdk 33 } }" >> app/build.gradle
 
       - name: Build APK with Gradle
         run: |
