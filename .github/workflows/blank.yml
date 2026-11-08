@@ -22,25 +22,30 @@ jobs:
           mkdir -p output_apk
           cd final_app
           
-          # Автоматически генерируем чистую Android-оболочку без тяжелых библиотек
-          cat << 'EOF' > AndroidManifest.xml
-          <manifest xmlns:android="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0">
-              <application android:label="PicoCube" android:hasCode="false">
-                  <activity android:name="android.app.Activity" android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
+          # Записываем манифест без двоеточий, чтобы Linux не ломал строку
+          echo '<manifest XMLNS_placeholder="http://android.com" package="com.myvrgame.cube" versionCode="1" versionName="1.0">' > AndroidManifest.xml
+          echo '    <application ANDROID_placeholder="PicoCube" HASCODE_placeholder="false">' >> AndroidManifest.xml
+          echo '        <activity ANDROID_NAME_placeholder="android.app.Activity" EXPORTED_placeholder="true">' >> AndroidManifest.xml
+          echo '            <intent-filter>' >> AndroidManifest.xml
+          echo '                <action ANDROID_NAME_placeholder="android.intent.action.MAIN" />' >> AndroidManifest.xml
+          echo '                <category ANDROID_NAME_placeholder="android.intent.category.LAUNCHER" />' >> AndroidManifest.xml
+          echo '            </intent-filter>' >> AndroidManifest.xml
+          echo '        </activity>' >> AndroidManifest.xml
+          echo '    </application>' >> AndroidManifest.xml
+          echo '</manifest>' >> AndroidManifest.xml
+          
+          # А теперь заменяем плейсхолдеры на настоящие системные атрибуты Android
+          sed -i 's/XMLNS_placeholder/xmlns:android/g' AndroidManifest.xml
+          sed -i 's/ANDROID_placeholder/android:label/g' AndroidManifest.xml
+          sed -i 's/HASCODE_placeholder/android:hasCode/g' AndroidManifest.xml
+          sed -i 's/ANDROID_NAME_placeholder/android:name/g' AndroidManifest.xml
+          sed -i 's/EXPORTED_placeholder/android:exported/g' AndroidManifest.xml
 
-          # Находим системные инструменты Android, которые уже вшиты в сервер GitHub
+          # Находим системные инструменты Android
           AAPT_PATH=$(find ${ANDROID_HOME}/build-tools -name aapt | sort -V | tail -n 1)
           ANDROID_JAR=$(find ${ANDROID_HOME}/platforms -name android.jar | sort -V | tail -n 1)
           
-          # Молниеносно собираем легкий APK файл напрямую одной командой
+          # Собираем чистый APK
           $AAPT_PATH package -f -M AndroidManifest.xml -I $ANDROID_JAR -A assets -F ../output_apk/app-debug.apk
 
       - name: Upload APK artifact
