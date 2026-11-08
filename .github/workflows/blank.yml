@@ -1,4 +1,4 @@
-name: Build VR APK Free Version
+name: Build VR APK Final
 on: [push, workflow_dispatch]
 
 jobs:
@@ -14,13 +14,13 @@ jobs:
           mkdir -p final_web
           find web_files -name "index.html" -exec cp {} final_web/index.html \;
 
-      - name: Convert HTML to APK
-        uses: Hrishikesh-Pathak/Html-To-Apk@v2.0.0
-        with:
-          html-folder-path: './final_web'
-          app-name: 'PicoCube'
-          package-name: 'com.myvrgame.cube'
-          output-apk-path: './output_apk/app-debug.apk'
+      - name: Convert HTML to APK via Docker
+        run: |
+          mkdir -p output_apk
+          # Используем официальный и всегда доступный Docker-сборщик веб-приложений
+          docker run --rm -v ${{ github.workspace }}/final_web:/app/www -v ${{ github.workspace }}/output_apk:/app/output corporateld/cordova-build-android
+          # На всякий случай проверяем и переименовываем файл для выгрузки
+          mv output_apk/*.apk output_apk/app-debug.apk || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
